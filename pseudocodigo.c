@@ -55,6 +55,7 @@ while (e != void){// ---------> NAF: No se si cuando revisas una entrada vacia d
 		fl = e;
 	}
 	i = i + 1;
+	e = argv[i]//Guardamos en e la siguiente entrada
 }
 if (p == 1 && h == 1){
 	printf("Error: No se puede ingresar las opciones -p y -h simultaneamente")
@@ -148,6 +149,9 @@ while (i < nobj){//Guardamos la ubicacion de cada objetivo
 //--------------------------------------------------------------(3)-------------------------------------------------------------------
 int rep;//Numero de bombas que le toca a cada proceso/hilo
 int repp = nbomb;//Numero de bombas que le toca al proceso/hilo principal
+if (nbomb > n){
+	n = nbomb;
+}
 if (n != 0){
 	rep = nbomb / (n+1);
 	repp = rep;
@@ -212,10 +216,16 @@ pense en una estructura dinamica pero las cosas con apuntadores darian muchos pr
 de retornarselas al proceso padre, en la semana pedire ayuda y si se me ocurre algo mejor te aviso
 y lo cambio*/
 
-i = 0;//Reciclamos el contador del ciclo anterior
 int k;//Contador para el ciclo mas interno
 int res[size][size];//Campo de batalla con el resultado de los bombardeos
-while (i < size){
+int tot[nobj];//Arreglo con el total de los daños causados por los ataques
+i = 0;//Reciclamos la variable del ciclo anterior
+while (i < nobj){//Inicializamos todos los elementos en false
+	tot[i] = 0;
+	i = i + 1;
+}
+res = cdb;//Actualizamos res con los valores de cdb
+while (i < size){//Ponemos en 0 los lugares donde hay un objetivo
 	j = 0;//Reciclamos el contador del ciclo anterior
 	while (j < size){
 		if (res[i][j] != -1){
@@ -225,145 +235,100 @@ while (i < size){
 	}
 	i= i + 1;
 }
-if (ret == 0){
-	i = 0;//Reciclamos el contador del ciclo anterior
-	while (i < rep){
-		bomb = mybombs[i];//Reciclamos la bomba auxiliar
-		j = bomb.coordX - bomb.radio;//Reciclamos el contador del ciclo anterior
-		while (j < bomb.coordX + bomb.radio){//Recorremos hasta el final del tablero
-			k = bomb.coordY - bomb.radio//
-			while (k < bomb.coordY + bomb.radio){
-				if (cdb[j][k] != -1){
-					res[j][k] = res[j][k] + bomb.pot;//Guardamos el daño que ha sufrido el objetivo hasta ahora
-				}
-				k = k + 1;
+i = 0;//Reciclamos el contador del ciclo anterior
+j = 0;//Reciclamos el contador del ciclo anterior
+while (i < rep){
+	bomb = mybombs[i];//Reciclamos la bomba auxiliar
+	j = bomb.coordX - bomb.radio;//Reciclamos el contador del ciclo anterior
+	while (j < bomb.coordX + bomb.radio){//Recorremos hasta el final del tablero
+		k = bomb.coordY - bomb.radio
+		while (k < bomb.coordY + bomb.radio){
+			if (cdb[j][k] != -1){
+				res[j][k] = res[j][k] + bomb.pot;//Guardamos el daño que ha sufrido el objetivo hasta ahora
 			}
-			j = j + 1;
+			k = k + 1;
 		}
-		i = i + 1;
+		j = j + 1;
 	}
+	i = i + 1;
 }
-if (ret == 0){
-	i = 0;//Reciclamos el contador del ciclo anterior
-	while (i < rep){
-		bomb = mybombs[i];//Reciclamos la bomba auxiliar
-		j = bomb.coordX - bomb.radio;//Reciclamos el contador del ciclo anterior
-		while (j < bomb.coordX + bomb.radio){//Recorremos hasta el final del tablero
-			k = bomb.coordY - bomb.radio//
-			while (k < bomb.coordY + bomb.radio){
-				if (cdb[j][k] != -1){
-					res[j][k] = res[j][k] + bomb.pot;//Guardamos el daño que ha sufrido el objetivo hasta ahora
-				}
-				k = k + 1;
-			}
-			j = j + 1;
+i = 0;//Reciclamos el contador del ciclo anterior
+j = 0;//Reciclamos el contador del ciclo anterior
+//----> NAF: Esto de recorrer y sumar daños deberia ir en una funcion <------
+while (i < size){//Recorremos el resultado buscando los daños
+	j = 0;//Reciclamos el contador del ciclo anterior
+	while (j < size){
+		if (res[i][j] != -1){//Si el cuadro en el que estamos no es -1
+			tot[cdb[i][j]] = res[i][j];//Guardamos el dañoen la posicion del arreglo referente a ese objetivo
 		}
-		i = i + 1;
+		j = j + 1;
 	}
+	i = i + 1;
 }
 
-//-----------------------------------------------------------(7)(8)-----------------------------------------------------------------------
+//-----------------------------------------------------------(7)-----------------------------------------------------------------------
 
-/* NAF: Usualmente no me gusta unir dos puntos del pseudocodigo en la implementacion porque
-siento que desmodularizo el codigo pero en este caso particular como es tan ineficiente la 
-forma en que el proceso padre recive los datos lo mejor es procesarlos de una vez y no tener
-que irlos guardando todos*/
+//------------->NAF: Si esta parte o la siguiente da problemas probablemente sea por la sintais de la variable a retornar/recivir, 
+//                   en caso de que sea asi avisame <--------------
 
 if (ret != 0){//Para procesos hijos
-	exit(res);//Retornamos el tablero con los daños
+	exit(tot);//Retornamos el total de los daños
 }
-else{
-	int afect[nobj];//Arreglo de booleanos que dice si un objetivo fue afectado por una bomba
-	i = 0;//Reciclamos la variable del ciclo anterior
-	while (i < nobj){//Inicializamos todos los elementos en false
-		afect[i] = 0;
-		i = i + 1;
-	}
-	int dest[nobj];//Arreglo de booleanos que dice si un objetivo fue destruido por una bomba
-	i = 0;//Reciclamos la variable del ciclo anterior
-	while (i < nobj){//Inicializamos todos los elementos en false
-		dest[i] = 0;
-		i = i + 1;
-	}
-	int ompd = 0;//Objetivos militares parcialmente destruidos
-	int omtd = 0;//Objetivos militares totalmente destruidos
-	int ocpd = 0;//Objetivos civiles parcialmente destruidos
-	int octd = 0;//Objetivos civiles totalmente destruidos
-	i = 0;//Reciclamos el contador del ciclo anterior
-	//----> NAF: Esto de recorrer y sumar daños deberia ir en una funcion <------
-	while (i < size){//Recorremos el resultado buscando los daños
-		j = 0;//Reciclamos el contador del ciclo anterior
-		while (j < size){
-			if (res[i][j] != -1){//Si el cuadro en el que estamos no es -1
-				if (objs[cdb[i][j]].tipo == "c"){//si el objetivo en el que estamos es civil
-					objs[cdb[i][j]].val = objs[cdb[i][j]].val - res[i][j];//Restamos los daños causados por las bombas
-					if(afec[cdb[i][j]]){//Si el objetivo actual no habia sido afectado
-						ocpd = ocpd + 1;//Aumentamos en uno los objetivos civiles parcialmente destruidos
-						afec[cdb[i][j]] = 1;//Marcamos el objetivo como afectado
-					}
-					if(objs[cdb[i][j]].val <= 0 && dest[cdb[i][j]] == 0){//Si el valor de un objetivo llega a 0
-						ocpd = ocpd - 1;//Restamos uno a la cuenta de parcialmente destruidos
-						octd = octd + 1;//Sumamos uno a la cuenta de totalmente destruidos
-						dest[cdb[i][j]] = 1;//Marcamos el objetivo como destruido
-					}
-				}
-				else{//Si el objetivo es de tipo militar
-					objs[cdb[i][j]].val = objs[cdb[i][j]].val + res[i][j];//Sumamos los daños causados por las bombas
-					if(afec[cdb[i][j]]){//Si el objetivo actual no habia sido afectado
-						ompd = ompd + 1;//Aumentamos en uno los objetivos militares parcialmente destruidos
-						afec[cdb[i][j]] = 1;//Marcamos el objetivo como afectado
-					}
-					if(objs[cdb[i][j]].val >= 0 && dest[cdb[i][j]] == 0){//Si el valor de un objetivo pasa de 0
-						ompd = ompd - 1;//Restamos uno a la cuenta de parcialmente destruidos
-						omtd = omtd + 1;//Sumamos uno a la cuenta de totalmente destruidos
-						dest[cdb[i][j]] = 1;//Marcamos el objetivo como destruido
-					}
-				}	
-			}
-			j = j + 1;
+//  -------------> NAF: Este else es probablemente inecesario <--------------
+else{//Recivimos los resultados de los hijos
+	int totaux[nobj]//Arreglo auxiliar para recivir datos de los procesos hijos
+	i = 0;
+	while (i < n){
+//     -------> NAF: Este wait pude ser general tambien de ser necesario <--------
+		totaux = waitpid(pids[i])
+		j = 0;
+		while (j < nobj){
+			tot[j] = tot[j] + totaux[j];
+			i = i + 1
 		}
 		i = i + 1;
 	}
-	k = 0;
-	while (k < n){
-	// -----> NAF: no estoy claro de la sintaxis de esta linea <--------
-		res = wait(0);//Recivimos el resultado de algun hijo
-		i = 0;//Reciclamos el contador del ciclo anterior
-		//----> NAF: Esto de recorrer y sumar daños deberia ir en una funcion <------
-		while (i < size){//Recorremos el resultado buscando los daños
-			j = 0;//Reciclamos el contador del ciclo anterior
-			while (j < size){
-				if (res[i][j] != -1){//Si el cuadro en el que estamos no es -1
-					if (objs[cdb[i][j]].tipo == "c"){//si el objetivo en el que estamos es civil
-						objs[cdb[i][j]].val = objs[cdb[i][j]].val - res[i][j];//Restamos los daños causados por las bombas
-						if(afec[cdb[i][j]]){//Si el objetivo actual no habia sido afectado
-							ocpd = ocpd + 1;//Aumentamos en uno los objetivos civiles parcialmente destruidos
-							afec[cdb[i][j]] = 1;//Marcamos el objetivo como afectado
-						}
-						if(objs[cdb[i][j]].val <= 0 && dest[cdb[i][j]] == 0){//Si el valor de un objetivo llega a 0
-							ocpd = ocpd - 1;//Restamos uno a la cuenta de parcialmente destruidos
-							octd = octd + 1;//Sumamos uno a la cuenta de totalmente destruidos
-							dest[cdb[i][j]] = 1;//Marcamos el objetivo como destruido
-						}
-					}
-					else{//Si el objetivo es de tipo militar
-						objs[cdb[i][j]].val = objs[cdb[i][j]].val + res[i][j];//Sumamos los daños causados por las bombas
-						if(afec[cdb[i][j]]){//Si el objetivo actual no habia sido afectado
-							ompd = ompd + 1;//Aumentamos en uno los objetivos militares parcialmente destruidos
-							afec[cdb[i][j]] = 1;//Marcamos el objetivo como afectado
-						}
-						if(objs[cdb[i][j]].val >= 0 && dest[cdb[i][j]] == 0){//Si el valor de un objetivo pasa de 0
-							ompd = ompd - 1;//Restamos uno a la cuenta de parcialmente destruidos
-							omtd = omtd + 1;//Sumamos uno a la cuenta de totalmente destruidos
-							dest[cdb[i][j]] = 1;//Marcamos el objetivo como destruido
-						}
-					}	
-				}
-				j = j + 1;
-			}
-			i = i + 1;
-		}
-	k = k + 1;
-	}
 }
+//------------------------------------------------------------------(8)------------------------------------------------------------------
+
+//+ civ - mil
+int ompd = 0;//Objetivos militares parcialmente destruidos
+int omtd = 0;//Objetivos militares totalmente destruidos
+int ocpd = 0;//Objetivos civiles parcialmente destruidos
+int octd = 0;//Objetivos civiles totalmente destruidos
+int ocna = 0;//Objetivos civiles no afectados
+int omna= 0;//Objetivos militares no afectados
+i = 0;
+while (i < nobj){
+	if (tot[i] == 0){//Si el objetivo no es afectado
+		if (objs[i].tipo == "c"){//Si el objetivo es civil
+			ocna = ocna + 1;
+		}
+		if (objs[i].tipo == "m"){//Si el objetivo es militar
+			omna = omna + 1;
+		}
+	}
+	else{//Si el objetivo es afectado
+		if (objs[i].tipo == "c"){
+			if (objs[i].val - tot[i] <= 0){//Si el daño es mayor o igual a la resistencia del objetivo
+				octd = octd + 1;
+			}
+			else{
+				ocpd = ocpd + 1;
+			}
+		}
+		if (objs[i].tipo== "m"){
+			if (objs[i].val - tot[i] >= 0){//Si el daño es mayor o igual a la resistencia del objetivo
+				omtd = omtd + 1;
+			}
+			else{
+				ompd = ompd + 1;
+			}			
+		}
+	}
+	i = i + 1;
+}
+
 //------------------------------------------------------------------(9)------------------------------------------------------------------
+
+//Imprimimos los resultados obtenidos
